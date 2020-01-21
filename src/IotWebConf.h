@@ -35,7 +35,7 @@ const char IOTWEBCONF_HTML_HEAD_END[] PROGMEM     = "</head><body>";
 const char IOTWEBCONF_HTML_BODY_INNER[] PROGMEM   = "<div style='text-align:left;display:inline-block;min-width:260px;'>";
 const char IOTWEBCONF_HTML_FORM_START[] PROGMEM   = "<form action='' method='post'><fieldset><input type='hidden' name='iotSave' value='true'>";
 const char IOTWEBCONF_HTML_FORM_END[] PROGMEM     = "</fieldset><button type='submit'>Apply</button></form>";
-const char IOTWEBCONF_HTML_SAVED[] PROGMEM        = "<div>Condiguration saved<br />Return to <a href='/'>home page</a>.</div>";
+const char IOTWEBCONF_HTML_SAVED[] PROGMEM        = "<div>Configuration saved<br />Return to <a href='/'>home page</a>.</div>";
 const char IOTWEBCONF_HTML_END[] PROGMEM          = "</div></body></html>";
 const char IOTWEBCONF_HTML_UPDATE[] PROGMEM       = "<div style='padding-top:25px;'><a href='{u}'>Firmware update</a></div>";
 const char IOTWEBCONF_HTML_CONFIG_VER[] PROGMEM   = "<div style='font-size: .6em;'>Firmware config version '{v}'</div>";
@@ -308,11 +308,20 @@ public:
 
   /**
    * By default IotWebConf starts up in AP mode. Calling this method before the init will force IotWebConf
-   * to connect immediatelly to the configured WiFi network.
+   * to connect immediately to the configured WiFi network.
    * Note, this method only takes effect, when WiFi mode is enabled, thus when a valid WiFi connection is
    * set up, and AP mode is not forced by ConfigPin (see setConfigPin() for details).
    */
   void skipApStartup() { this->_skipApStartup = true; }
+
+  /**
+   * By default IotWebConf will continue startup in WiFi mode, when no configuration request arrived
+   * in AP mode. With this method holding the AP mode can be forced.
+   * Further more, instant AP mode can forced even when we are currently in WiFi mode. 
+   *   @value - When parameter is TRUE AP mode is forced/entered.
+   *     When value is FALSE normal operation will continue.
+   */
+  void forceApMode(boolean value);
 
   /**
    * Get internal parameters, for manual handling.
@@ -373,6 +382,7 @@ private:
   const char* _updatePath = NULL;
   boolean _forceDefaultPassword = false;
   boolean _skipApStartup = false;
+  boolean _forceApMode = false;
   IotWebConfParameter* _firstParameter = NULL;
   IotWebConfTextParameter _thingNameParameter;
   IotWebConfPasswordParameter _apPasswordParameter;
@@ -380,9 +390,9 @@ private:
   IotWebConfPasswordParameter _wifiPasswordParameter;
   IotWebConfNumberParameter _apTimeoutParameter;
   char _thingName[IOTWEBCONF_WORD_LEN];
-  char _apPassword[IOTWEBCONF_WORD_LEN];
+  char _apPassword[IOTWEBCONF_PASSWORD_LEN];
   char _wifiSsid[IOTWEBCONF_WORD_LEN];
-  char _wifiPassword[IOTWEBCONF_WORD_LEN];
+  char _wifiPassword[IOTWEBCONF_PASSWORD_LEN];
   char _apTimeoutStr[IOTWEBCONF_WORD_LEN];
   unsigned long _apTimeoutMs = IOTWEBCONF_DEFAULT_AP_MODE_TIMEOUT_MS;
   unsigned long _wifiConnectionTimeoutMs =
@@ -421,9 +431,14 @@ private:
 
   void changeState(byte newState);
   void stateChanged(byte oldState, byte newState);
-  boolean isWifiModePossible()
+  boolean mustUseDefaultPassword()
   {
     return this->_forceDefaultPassword || (this->_apPassword[0] == '\0');
+  }
+  boolean mustStayInApMode()
+  {
+    return this->_forceDefaultPassword || (this->_apPassword[0] == '\0') ||
+      this->_wifiSsid[0] == '\0' || this->_forceApMode;
   }
   boolean isIp(String str);
   String toStringIp(IPAddress ip);

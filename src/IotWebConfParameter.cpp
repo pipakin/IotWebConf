@@ -173,7 +173,7 @@ void IotWebConfPasswordParameter::debugToSerial()
 void IotWebConfPasswordParameter::update(String newValue)
 {
   IotWebConfParameter* current = this;
-//  char temp[IOTWEBCONF_WORD_LEN];
+//  char temp[IOTWEBCONF_PASSWORD_LEN];
   char temp[current->getLength()];
   newValue.toCharArray(temp, current->getLength());
   if (temp[0] != '\0')
